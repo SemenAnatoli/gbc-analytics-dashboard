@@ -15,6 +15,12 @@ import fs from 'fs'
 import path from 'path'
 import { fileURLToPath } from 'url'
 
+// Отключаем прокси — RetailCRM не доступен через локальный прокси
+delete process.env.https_proxy
+delete process.env.http_proxy
+delete process.env.HTTPS_PROXY
+delete process.env.HTTP_PROXY
+
 const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 const RETAILCRM_URL = process.env.RETAILCRM_URL
@@ -32,9 +38,17 @@ async function uploadOrder(order, index) {
   const url = `${RETAILCRM_URL}/api/v5/orders/create`
 
   const params = new URLSearchParams()
+  // Приводим к типам которые реально есть в аккаунте
+  const normalizedOrder = {
+    ...order,
+    orderType: 'main',
+    orderMethod: order.orderMethod ?? 'shopping-cart',
+    status: 'new',
+  }
+
   params.append('apiKey', API_KEY)
-  params.append('site', 'default') // замените на ваш site code из RetailCRM
-  params.append('order', JSON.stringify(order))
+  params.append('site', 'semenbaranovdmb')
+  params.append('order', JSON.stringify(normalizedOrder))
 
   try {
     const response = await axios.post(url, params, {

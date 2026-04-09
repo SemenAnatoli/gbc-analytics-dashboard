@@ -16,6 +16,12 @@ import 'dotenv/config'
 import axios from 'axios'
 import { createClient } from '@supabase/supabase-js'
 
+// Отключаем прокси
+delete process.env.https_proxy
+delete process.env.http_proxy
+delete process.env.HTTPS_PROXY
+delete process.env.HTTP_PROXY
+
 const RETAILCRM_URL = process.env.RETAILCRM_URL
 const API_KEY = process.env.RETAILCRM_API_KEY
 const SUPABASE_URL = process.env.NEXT_PUBLIC_SUPABASE_URL
