@@ -1,0 +1,17 @@
+{
+  "name": "gbc-scripts",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "upload": "node upload-to-retailcrm.js",
+    "sync": "node sync-to-supabase.js",
+    "bot": "node telegram-bot.js"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.0",
+    "axios": "^1.6.0",
+    "dotenv": "^16.4.0",
+    "node-telegram-bot-api": "^0.64.0"
+  }
+}
