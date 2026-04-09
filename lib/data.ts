@@ -6,6 +6,8 @@ import type {
   CityData,
   StatusData,
   UtmData,
+  TopProduct,
+  WeeklyTrend,
 } from './types'
 
 export async function getOrders(): Promise<Order[]> {
@@ -14,7 +16,6 @@ export async function getOrders(): Promise<Order[]> {
     console.warn('Supabase не настроен — проверьте переменные окружения')
     return []
   }
-
   const { data, error } = await supabase
     .from('orders')
     .select('*')
@@ -39,7 +40,6 @@ export function computeStats(orders: Order[]): DashboardStats {
 
 export function computeOrdersByDay(orders: Order[]): ChartDataPoint[] {
   const map: Record<string, { orders: number; revenue: number }> = {}
-
   for (const order of orders) {
     const date = order.created_at
       ? new Date(order.created_at).toLocaleDateString('ru-KZ', {
@@ -51,7 +51,6 @@ export function computeOrdersByDay(orders: Order[]): ChartDataPoint[] {
     map[date].orders += 1
     map[date].revenue += order.total_amount ?? 0
   }
-
   return Object.entries(map)
     .map(([date, v]) => ({ date, ...v }))
     .reverse()
@@ -99,4 +98,44 @@ export function computeByUtm(orders: Order[]): UtmData[] {
   return Object.entries(map)
     .map(([source, count]) => ({ source, count }))
     .sort((a, b) => b.count - a.count)
+}
+
+export function computeTopProducts(orders: Order[]): TopProduct[] {
+  const map: Record<string, { count: number; revenue: number }> = {}
+  for (const order of orders) {
+    for (const item of order.items ?? []) {
+      const name = item.productName?.trim() || 'Без названия'
+      if (!map[name]) map[name] = { count: 0, revenue: 0 }
+      map[name].count += item.quantity ?? 1
+      map[name].revenue += (item.initialPrice ?? 0) * (item.quantity ?? 1)
+    }
+  }
+  return Object.entries(map)
+    .map(([name, v]) => ({ name, ...v }))
+    .sort((a, b) => b.revenue - a.revenue)
+    .slice(0, 6)
+}
+
+export function computeTopOrders(orders: Order[], limit = 3): Order[] {
+  return [...orders].sort((a, b) => b.total_amount - a.total_amount).slice(0, limit)
+}
+
+export function computeWeeklyTrend(orders: Order[]): WeeklyTrend {
+  const week = 7 * 24 * 60 * 60 * 1000
+  const now = Date.now()
+  const current = orders.filter(
+    (o) => o.created_at && now - new Date(o.created_at).getTime() < week
+  ).length
+  const previous = orders.filter((o) => {
+    if (!o.created_at) return false
+    const age = now - new Date(o.created_at).getTime()
+    return age >= week && age < 2 * week
+  }).length
+  const pct =
+    previous > 0
+      ? Math.round(((current - previous) / previous) * 100)
+      : current > 0
+      ? 100
+      : 0
+  return { current, previous, pct, isUp: pct >= 0 }
 }

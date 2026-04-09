@@ -49,3 +49,16 @@ export interface UtmData {
   source: string
   count: number
 }
+
+export interface TopProduct {
+  name: string
+  count: number
+  revenue: number
+}
+
+export interface WeeklyTrend {
+  current: number
+  previous: number
+  pct: number
+  isUp: boolean
+}

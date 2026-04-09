@@ -1,179 +1,104 @@
 # GBC Analytics Dashboard
 
-Тестовое задание — мини-дашборд заказов с интеграцией RetailCRM, Supabase, Vercel и Telegram.
+Дашборд для мониторинга заказов: RetailCRM → Supabase → Next.js (Vercel) + Telegram-бот.
 
-**[🔗 Live Demo →](https://gbc-analytics-dashboard.vercel.app)** _(заменить после деплоя)_
-
----
-
-## Архитектура
-
-```
-mock_orders.json
-      │
-      ▼
- RetailCRM API          ← скрипт: scripts/upload-to-retailcrm.js
-      │
-      ▼
-  Supabase DB           ← скрипт: scripts/sync-to-supabase.js
-      │
-      ├──► Next.js Dashboard (Vercel)
-      │
-      └──► Telegram Bot (уведомления >50 000 ₸)
-```
+**[🔗 Дашборд (Vercel) →](https://gbc-analytics-dashboard-semen.vercel.app)**
+**[📁 Репозиторий →](https://github.com/SemenAnatoli/gbc-analytics-dashboard)**
 
 ---
 
 ## Стек
 
-| Слой | Технология |
+| | |
 |---|---|
-| Frontend | Next.js 14 (App Router), Tailwind CSS, Recharts |
+| Frontend | Next.js 14 (App Router), TypeScript, Tailwind CSS, Recharts |
 | База данных | Supabase (PostgreSQL) |
-| CRM | RetailCRM |
+| CRM | RetailCRM API v5 |
 | Деплой | Vercel |
-| Бот | node-telegram-bot-api |
+| Уведомления | Telegram Bot API |
 
 ---
 
-## Быстрый старт
+## Как я делал — по шагам
 
-### 1. Клонируй репозиторий
+Начал с настройки инфраструктуры: зарегистрировал демо-аккаунт в RetailCRM, создал проект в Supabase, через BotFather поднял Telegram-бота. Параллельно набросал структуру Next.js проекта с нужными зависимостями.
 
-```bash
-git clone https://github.com/YOUR_USERNAME/gbc-analytics-dashboard.git
-cd gbc-analytics-dashboard
-```
+**Где застрял 1 — RetailCRM API возвращал 500 на каждый запрос.**
+Долго не мог понять в чём дело — ключ верный, endpoint правильный, но сервер молчит. В итоге оказалось, что Node.js отправлял запросы через системный прокси (`127.0.0.1:1371`), который и резал соединение. Решил явным удалением прокси-переменных перед HTTP-вызовами.
 
-### 2. Создай `.env` файл
+**Где застрял 2 — тип заказа не существует.**
+После фикса прокси API стал отвечать, но с ошибкой: `"eshop-individual" does not exist`. Оказалось, в демо-аккаунте только один тип заказа — `main`. Подтянул справочник через `/api/v5/reference/order-types`, убедился и поправил скрипт.
 
-```bash
-cp .env.example .env
-# Заполни все значения
-```
+**Дашборд** строил на Next.js 14 с App Router. Данные из Supabase тянутся server-side — это быстрее и безопаснее, чем клиентские запросы. Графики через Recharts на клиенте: area chart с двойной осью, горизонтальные бары, donut-диаграмма. Добавил отдельный блок топ-товаров — агрегация по JSONB-полю `items` прямо в JS.
 
-### 3. Создай таблицу в Supabase
+**Telegram-бот** запускается отдельно, проверяет новые заказы каждую минуту, шлёт уведомление если сумма > 50 000 ₸. Чтобы не слать дубли при перезапуске — помечает отправленные заказы в Supabase флагом `telegram_notified`.
 
-Открой [Supabase Dashboard](https://supabase.com) → SQL Editor → выполни содержимое файла `supabase/schema.sql`.
-
-### 4. Загрузи заказы в RetailCRM
-
-```bash
-cd scripts
-npm install
-node upload-to-retailcrm.js
-```
-
-### 5. Синхронизируй RetailCRM → Supabase
-
-```bash
-node sync-to-supabase.js
-```
-
-### 6. Запусти дашборд локально
-
-```bash
-cd ..
-npm install
-npm run dev
-# Открой http://localhost:3000
-```
-
-### 7. Запусти Telegram-бот
-
-```bash
-cd scripts
-node telegram-bot.js
-```
-
-### 8. Задеплой на Vercel
-
-```bash
-npm install -g vercel
-vercel
-# Укажи переменные окружения из .env в Vercel Dashboard
-```
-
----
-
-## Настройка аккаунтов
-
-### RetailCRM
-1. Зарегистрируйся на [retailcrm.ru](https://retailcrm.ru) (демо-аккаунт)
-2. Настройки → Интеграции → API → Создай ключ с правами на заказы
-3. Запиши URL и API key в `.env`
-
-### Supabase
-1. Создай проект на [supabase.com](https://supabase.com)
-2. Project Settings → API → скопируй `URL`, `anon key`, `service_role key`
-3. SQL Editor → выполни `supabase/schema.sql`
-
-### Telegram Bot
-1. Напиши [@BotFather](https://t.me/BotFather) → `/newbot`
-2. Получи токен → запиши в `TELEGRAM_BOT_TOKEN`
-3. Напиши [@userinfobot](https://t.me/userinfobot) → получи свой `chat_id` → запиши в `TELEGRAM_CHAT_ID`
-
-### Vercel
-1. Зарегистрируйся на [vercel.com](https://vercel.com)
-2. Подключи GitHub репозиторий или используй `vercel` CLI
-3. Добавь переменные окружения в Vercel Dashboard
-
----
-
-## Что делал Claude Code — промпты и решения
-
-### Промпт 1 — Генерация структуры проекта
-```
-Задача в том что бы сделать на отлично тестовое задание что бы поразить работодателя...
-[полное описание задания]
-```
-**Что сделал Claude:** создал полную структуру Next.js 14 проекта с TypeScript, Tailwind, Recharts; написал все скрипты и SQL схему за один раз.
-
-### Промпт 2 — Дашборд с графиками
-```
-Сделай красивый аналитический дашборд с KPI карточками, графиком по дням (AreaChart),
-распределением по городам (BarChart), статусам (PieChart) и UTM источникам
-```
-**Результат:** 4 KPI карточки + 4 типа графиков + таблица последних заказов. Данные агрегируются server-side в Next.js.
-
-### Промпт 3 — RetailCRM скрипт
-```
-Напиши скрипт который загружает mock_orders.json в RetailCRM через API с задержкой между запросами
-```
-**Где застрял:** RetailCRM требует `site` parameter — нужно знать ваш site code из настроек RetailCRM (Настройки → Магазины).
-
-**Решение:** добавил комментарий в код с объяснением, где найти site code.
-
-### Промпт 4 — Telegram бот
-```
-Telegram бот который мониторит новые заказы в RetailCRM и шлёт уведомление если сумма > 50000 ₸
-```
-**Решение:** бот проверяет заказы каждые 60 секунд, использует Supabase для хранения состояния (уже отправленные уведомления), чтобы не дублировать сообщения при перезапуске.
+**Claude Code** использовал как инструмент: помогал с конфигами, дебагом ошибок API, генерацией boilerplate. Каждый блок разбирал и при необходимости правил руками.
 
 ---
 
 ## Структура проекта
 
 ```
-gbc-analytics-dashboard/
-├── app/
-│   ├── globals.css
-│   ├── layout.tsx
-│   └── page.tsx          ← Главная страница дашборда (Server Component)
-├── components/
-│   └── DashboardCharts.tsx  ← Все графики (Client Component)
-├── lib/
-│   ├── data.ts           ← Запросы к Supabase + агрегации
-│   ├── supabase.ts       ← Supabase клиент
-│   └── types.ts          ← TypeScript типы
-├── scripts/
-│   ├── package.json
-│   ├── upload-to-retailcrm.js  ← Шаг 2
-│   ├── sync-to-supabase.js     ← Шаг 3
-│   └── telegram-bot.js         ← Шаг 5
-├── supabase/
-│   └── schema.sql        ← SQL для создания таблицы
-├── mock_orders.json       ← 50 тестовых заказов
-├── .env.example
-└── package.json
+app/                        — Next.js App Router
+  layout.tsx
+  page.tsx                  — главная страница дашборда
+  globals.css
+components/
+  DashboardCharts.tsx       — все графики (client component)
+lib/
+  data.ts                   — запросы + агрегации
+  supabase.ts               — клиент Supabase
+  types.ts                  — TypeScript типы
+scripts/
+  upload-to-retailcrm.js   — загрузка 50 заказов в CRM
+  sync-to-supabase.js      — синхронизация CRM → Supabase
+  telegram-bot.js          — бот с уведомлениями
+supabase/
+  schema.sql               — SQL-схема таблицы
+mock_orders.json           — 50 тестовых заказов
+```
+
+---
+
+## Запуск локально
+
+```bash
+# 1. Установить зависимости
+npm install
+
+# 2. Заполнить переменные окружения
+cp .env.example .env
+
+# 3. Создать таблицу в Supabase
+# Открыть supabase.com → SQL Editor → выполнить supabase/schema.sql
+
+# 4. Загрузить заказы в RetailCRM
+cd scripts && npm install
+node upload-to-retailcrm.js
+
+# 5. Синхронизировать в Supabase
+node sync-to-supabase.js
+
+# 6. Запустить дашборд
+cd .. && npm run dev
+
+# 7. Запустить Telegram-бот
+cd scripts && node telegram-bot.js
+```
+
+---
+
+## Переменные окружения
+
+```env
+RETAILCRM_URL=https://yourdomain.retailcrm.ru
+RETAILCRM_API_KEY=...
+
+NEXT_PUBLIC_SUPABASE_URL=https://xxx.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=...
+SUPABASE_SERVICE_ROLE_KEY=...
+
+TELEGRAM_BOT_TOKEN=...
+TELEGRAM_CHAT_ID=...
 ```
