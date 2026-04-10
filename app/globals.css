@@ -3,62 +3,42 @@
 @tailwind utilities;
 
 @layer base {
-  * {
-    @apply box-border;
-  }
-  body {
-    @apply bg-slate-50 text-slate-900 antialiased;
-  }
-  ::-webkit-scrollbar {
-    @apply w-1.5;
-  }
-  ::-webkit-scrollbar-track {
-    @apply bg-slate-100;
-  }
-  ::-webkit-scrollbar-thumb {
-    @apply bg-slate-300 rounded-full;
-  }
-  ::-webkit-scrollbar-thumb:hover {
-    @apply bg-slate-400;
-  }
+  * { @apply box-border; }
+  body { @apply bg-transparent text-slate-800 antialiased; }
+  ::-webkit-scrollbar { @apply w-1; }
+  ::-webkit-scrollbar-track { @apply bg-transparent; }
+  ::-webkit-scrollbar-thumb { @apply bg-white/30 rounded-full; }
 }
 
 @layer components {
   .card {
-    @apply bg-white rounded-2xl border border-slate-100 shadow-sm;
+    @apply bg-white rounded-2xl shadow-[0_4px_24px_rgba(0,0,0,0.06)] border border-white/60;
   }
-  .card-padded {
-    @apply card p-6;
+  .card-p {
+    @apply card p-5;
   }
-  .stat-chip {
-    @apply flex items-center gap-2 bg-white/10 backdrop-blur-sm border border-white/20 rounded-xl px-3 py-2;
+  .sidebar-icon {
+    @apply w-10 h-10 flex items-center justify-center rounded-xl text-white/60 hover:bg-white/15 hover:text-white transition-all cursor-pointer;
   }
-  .badge {
-    @apply inline-flex items-center gap-1 text-xs font-medium px-2 py-0.5 rounded-full;
+  .sidebar-icon-active {
+    @apply w-10 h-10 flex items-center justify-center rounded-xl bg-white/20 text-white shadow-lg;
   }
-}
-
-@layer utilities {
-  .gradient-text {
-    @apply bg-gradient-to-r from-indigo-400 to-cyan-400 bg-clip-text text-transparent;
+  .badge-orange {
+    @apply inline-flex items-center text-xs font-semibold bg-orange-500 text-white px-3 py-1 rounded-full;
   }
-  .kpi-hover {
-    @apply transition-all duration-200 hover:shadow-md hover:-translate-y-0.5;
+  .stat-pill {
+    @apply flex items-center gap-1.5 text-xs font-medium px-2 py-1 rounded-lg;
   }
 }
 
-@keyframes pulse-dot {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50% { opacity: 0.6; transform: scale(0.85); }
-}
-.live-dot {
-  animation: pulse-dot 2s ease-in-out infinite;
-}
-
-@keyframes count-up {
-  from { opacity: 0; transform: translateY(8px); }
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(10px); }
   to   { opacity: 1; transform: translateY(0); }
 }
-.animate-in {
-  animation: count-up 0.4s ease-out forwards;
+.fade-up { animation: fadeUp 0.35s ease-out forwards; }
+
+@keyframes pulseLive {
+  0%,100% { opacity:1; transform:scale(1); }
+  50% { opacity:0.5; transform:scale(0.75); }
 }
+.live { animation: pulseLive 2s ease-in-out infinite; }
