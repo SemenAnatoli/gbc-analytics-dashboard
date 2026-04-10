@@ -256,14 +256,22 @@ export default async function DashboardPage() {
             <div className="flex items-center justify-between mb-4">
               <div>
                 <h2 className="text-sm font-bold text-slate-800">Заказы по дням</h2>
-                <p className="text-xs text-slate-400">Динамика за всё время</p>
+                <p className="text-xs text-slate-400">
+                  Бары — кол-во заказов · Линия — выручка · <span className="text-orange-500 font-semibold">пик выделен</span>
+                </p>
               </div>
-              <div className="flex gap-2">
-                {['7д', '30д', 'Всё'].map((t, i) => (
-                  <span key={t} className={`text-[11px] px-2.5 py-1 rounded-lg font-medium cursor-pointer transition-colors ${i === 2 ? 'bg-emerald-500 text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
-                    {t}
-                  </span>
-                ))}
+              <div className="flex items-center gap-3">
+                <div className="hidden sm:flex items-center gap-3 text-[10px] text-slate-400 mr-2">
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-2.5 rounded-sm bg-emerald-400 inline-block" /> Заказы</span>
+                  <span className="flex items-center gap-1"><span className="w-2.5 h-1 rounded-full bg-orange-400 inline-block" /> Выручка</span>
+                </div>
+                <div className="flex gap-1.5">
+                  {['7д', '30д', 'Всё'].map((t, i) => (
+                    <span key={t} className={`text-[11px] px-2.5 py-1 rounded-lg font-medium cursor-pointer transition-colors ${i === 2 ? 'bg-emerald-500 text-white shadow-sm' : 'bg-slate-100 text-slate-500 hover:bg-slate-200'}`}>
+                      {t}
+                    </span>
+                  ))}
+                </div>
               </div>
             </div>
             {orders.length ? <OrdersByDayChart data={byDay} /> : (

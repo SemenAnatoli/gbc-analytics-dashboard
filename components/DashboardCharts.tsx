@@ -1,9 +1,10 @@
 'use client'
 
 import {
-  AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
+  AreaChart, Area, BarChart, Bar, ComposedChart, Line,
+  PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-  LabelList,
+  LabelList, ReferenceLine, Legend,
 } from 'recharts'
 import type { ChartDataPoint, CityData, StatusData, TopProduct } from '@/lib/types'
 
@@ -36,28 +37,127 @@ const DarkTip = ({ active, payload, label }: any) => {
   )
 }
 
-// ─── Area chart ───────────────────────────────────────────────────────────────
-export function OrdersByDayChart({ data }: { data: ChartDataPoint[] }) {
+// ─── Big orders-by-day tooltip ────────────────────────────────────────────────
+const OrdersDayTip = ({ active, payload, label }: any) => {
+  if (!active || !payload?.length) return null
+  const orders = payload.find((p: any) => p.dataKey === 'orders')
+  const revenue = payload.find((p: any) => p.dataKey === 'revenue')
   return (
-    <ResponsiveContainer width="100%" height={200}>
-      <AreaChart data={data} margin={{ top: 8, right: 8, left: -20, bottom: 0 }}>
+    <div className="bg-slate-900/95 backdrop-blur text-white text-xs rounded-2xl px-4 py-3 shadow-2xl border border-white/10 min-w-[160px]">
+      <p className="text-slate-300 font-semibold mb-2 text-[11px] uppercase tracking-wider">{label}</p>
+      {orders && (
+        <div className="flex items-center justify-between gap-4 mb-1">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-sm bg-emerald-400" />
+            <span className="text-slate-400">Заказы</span>
+          </div>
+          <span className="font-black text-emerald-300 text-sm">{orders.value}</span>
+        </div>
+      )}
+      {revenue && (
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-1.5">
+            <span className="w-2 h-2 rounded-full bg-orange-400" />
+            <span className="text-slate-400">Выручка</span>
+          </div>
+          <span className="font-bold text-orange-300">{Number(revenue.value).toLocaleString('ru')} ₸</span>
+        </div>
+      )}
+    </div>
+  )
+}
+
+// ─── Orders by day — ComposedChart (bars + revenue line) ─────────────────────
+export function OrdersByDayChart({ data }: { data: ChartDataPoint[] }) {
+  const avg = data.length ? Math.round(data.reduce((s, d) => s + d.orders, 0) / data.length) : 0
+  const maxOrders = Math.max(...data.map(d => d.orders), 1)
+
+  return (
+    <ResponsiveContainer width="100%" height={240}>
+      <ComposedChart data={data} margin={{ top: 12, right: 16, left: -12, bottom: 0 }}>
         <defs>
-          <linearGradient id="gGreen" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#3ecf8e" stopOpacity={0.35} />
-            <stop offset="100%" stopColor="#3ecf8e" stopOpacity={0} />
+          {/* Bar gradient green→teal */}
+          <linearGradient id="barGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#3ecf8e" stopOpacity={1} />
+            <stop offset="100%" stopColor="#0d9488" stopOpacity={0.85} />
           </linearGradient>
-          <linearGradient id="gBlue" x1="0" y1="0" x2="0" y2="1">
-            <stop offset="0%" stopColor="#0ea5e9" stopOpacity={0.25} />
-            <stop offset="100%" stopColor="#0ea5e9" stopOpacity={0} />
+          {/* Bar gradient highlight (peak) */}
+          <linearGradient id="barGradPeak" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f97316" stopOpacity={1} />
+            <stop offset="100%" stopColor="#ea580c" stopOpacity={0.85} />
           </linearGradient>
+          {/* Revenue area gradient */}
+          <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#f97316" stopOpacity={0.18} />
+            <stop offset="100%" stopColor="#f97316" stopOpacity={0} />
+          </linearGradient>
+          {/* Glow filter */}
+          <filter id="glow">
+            <feGaussianBlur stdDeviation="2.5" result="coloredBlur" />
+            <feMerge><feMergeNode in="coloredBlur" /><feMergeNode in="SourceGraphic" /></feMerge>
+          </filter>
         </defs>
+
         <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-        <XAxis dataKey="date" tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-        <YAxis tick={{ fontSize: 10, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-        <Tooltip content={<DarkTip />} />
-        <Area type="monotone" dataKey="orders" name="Заказы" stroke="#3ecf8e" strokeWidth={2.5} fill="url(#gGreen)" dot={false} activeDot={{ r: 4, fill: '#3ecf8e', stroke: '#fff', strokeWidth: 2 }} />
-        <Area type="monotone" dataKey="revenue" name="Выручка" stroke="#0ea5e9" strokeWidth={2} fill="url(#gBlue)" dot={false} activeDot={{ r: 4, fill: '#0ea5e9', stroke: '#fff', strokeWidth: 2 }} yAxisId={0} hide />
-      </AreaChart>
+
+        <XAxis
+          dataKey="date"
+          tick={{ fontSize: 10, fill: '#94a3b8', fontWeight: 500 }}
+          axisLine={false} tickLine={false}
+          interval="preserveStartEnd"
+        />
+        <YAxis
+          yAxisId="orders"
+          tick={{ fontSize: 10, fill: '#94a3b8' }}
+          axisLine={false} tickLine={false}
+          width={28}
+        />
+        <YAxis
+          yAxisId="revenue"
+          orientation="right"
+          tick={{ fontSize: 9, fill: '#94a3b8' }}
+          axisLine={false} tickLine={false}
+          width={48}
+          tickFormatter={(v) => `${Math.round(v / 1000)}K`}
+        />
+
+        <Tooltip content={<OrdersDayTip />} cursor={{ fill: 'rgba(148,163,184,0.08)', radius: 6 }} />
+
+        {/* Average reference line */}
+        <ReferenceLine
+          yAxisId="orders"
+          y={avg}
+          stroke="#94a3b8"
+          strokeDasharray="4 4"
+          strokeWidth={1}
+          label={{ value: `avg ${avg}`, position: 'insideTopRight', fontSize: 9, fill: '#94a3b8', dy: -4 }}
+        />
+
+        {/* Bars: peak highlighted in orange */}
+        <Bar yAxisId="orders" dataKey="orders" name="Заказы" radius={[5, 5, 0, 0]} maxBarSize={28}>
+          {data.map((d, i) => (
+            <Cell
+              key={i}
+              fill={d.orders === maxOrders ? 'url(#barGradPeak)' : 'url(#barGrad)'}
+              opacity={0.92}
+            />
+          ))}
+        </Bar>
+
+        {/* Revenue line with glow */}
+        <Area
+          yAxisId="revenue"
+          type="monotone"
+          dataKey="revenue"
+          name="Выручка"
+          stroke="#f97316"
+          strokeWidth={2}
+          fill="url(#revGrad)"
+          dot={false}
+          activeDot={{ r: 5, fill: '#f97316', stroke: '#fff', strokeWidth: 2, filter: 'url(#glow)' }}
+          strokeDasharray=""
+        />
+      </ComposedChart>
     </ResponsiveContainer>
   )
 }
